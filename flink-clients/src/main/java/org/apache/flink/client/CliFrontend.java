@@ -918,6 +918,12 @@ public class CliFrontend {
 		EnvironmentInformation.checkJavaVersion();
 
 		try {
+			Thread.sleep(5000); // wait for 5 seconds for debugging session
+		} catch (InterruptedException e) {
+			// ignore
+		}
+
+		try {
 			CliFrontend cli = new CliFrontend();
 			int retCode = cli.parseParameters(args);
 			System.exit(retCode);
