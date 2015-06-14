@@ -2,20 +2,18 @@ package org.apache.flink.ml.recommendation
 
 import org.apache.flink.api.scala.ExecutionEnvironment
 import org.apache.flink.api.scala._
-import org.apache.flink.test.testdata.WordCountData
+
 
 /**
  * Created by vassil on 14.06.15.
  */
-class AssociationRuleMining {
-
-
-}
-
-
-//Test
 
 object AssociationRuleMining {
+
+  private var fileOutput: Boolean = false
+  private var textPath: String = null
+  private var outputPath: String = null
+  private var candidata_support: Int = 2
 
 
   def main(args: Array[String]) {
@@ -46,6 +44,8 @@ object AssociationRuleMining {
     env.execute("Scala AssociationRule Example")
   }
 
+
+
   private def parseParameters(args: Array[String]): Boolean = {
     if (args.length > 0) {
       fileOutput = true
@@ -74,10 +74,10 @@ object AssociationRuleMining {
     }
   }
 
-  private var fileOutput: Boolean = false
-  private var textPath: String = null
-  private var outputPath: String = null
-  private var support: Int = 2
+}
+
+
+class AssociationRuleMining {
 
 
 }
