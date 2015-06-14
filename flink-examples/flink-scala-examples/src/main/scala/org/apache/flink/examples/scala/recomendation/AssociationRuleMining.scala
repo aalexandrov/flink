@@ -1,4 +1,5 @@
-package org.apache.flink.ml.recommendation
+package org.apache.flink.examples.scala.recomendation
+
 
 import org.apache.flink.api.scala.ExecutionEnvironment
 import org.apache.flink.api.scala._
@@ -51,8 +52,8 @@ object AssociationRuleMining {
 
     val input = (
       "A B 4;" +
-      "A C 3;" +
-      "A B C 3" +
+        "A C 3;" +
+        "A B C 3" +
         "A C E 1"
       ).split(";").toSeq
     val documentKey = 1
@@ -60,7 +61,7 @@ object AssociationRuleMining {
 
 
     //val associationResul = candidateResult
-    val associationResult = inputDs
+    val associationResult = inputDs .map { (_, 1) }
     // TODO Vassil implement me
 
 
@@ -71,11 +72,15 @@ object AssociationRuleMining {
     if (fileOutput) {
       associationResult.writeAsCsv(outputPath, "\n", " ")
     } else {
-      println(associationResult)
-      println("TEXT")
+
+      associationResult.print()
+
+      println(associationResult.print)
+
+
     }
 
-    //env.execute("Scala AssociationRule Example")
+    env.execute("Scala AssociationRule Example")
   }
 
 
