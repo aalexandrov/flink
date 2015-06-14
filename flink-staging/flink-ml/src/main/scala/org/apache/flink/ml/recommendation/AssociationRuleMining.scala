@@ -47,7 +47,26 @@ object AssociationRuleMining {
     // A B C 3
     // A C E 1
     // ...
-    val associationResul = candidateResult
+
+
+    val expectedResultDummy: Seq[(String)] = {
+      Seq(
+        ("A B 5"),
+        ("A B C 3"),
+        ("A C 4"),
+        ("A B F 1"),
+        ("A C F 1")
+
+      )
+    }
+
+    //val associationResul = candidateResult
+    val associationResult = expectedResultDummy
+    // TODO Vassil implement me
+
+
+
+
     //////////////////// Association Rule END //////////////////////////////////////////////
 
     if (fileOutput) {
