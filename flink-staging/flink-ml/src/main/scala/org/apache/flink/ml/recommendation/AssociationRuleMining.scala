@@ -25,15 +25,30 @@ object AssociationRuleMining {
     val text = getTextDataSet(env)
 
     // Frequent Items
+
+    ////////////////////  Frequent Items START /////////////////////////////////////////////
     val counts = text.flatMap { _.toLowerCase.split("\\W+") filter { _.nonEmpty } }
       .map { (_, 1) }
       .groupBy(0)
       .sum(1)
+    ////////////////////  Frequent Items END ///////////////////////////////////////////////
 
-    // Candidate Items
 
 
-    // Association Rule
+    //////////////////// Candidate Items START /////////////////////////////////////////////
+    val candidateResult = counts
+    //////////////////// Candidate Items END ///////////////////////////////////////////////
+
+
+    //////////////////// Association Rule START ////////////////////////////////////////////
+    // Data at that point is in the following form
+    // A B 4
+    // A C 3
+    // A B C 3
+    // A C E 1
+    // ...
+    val associationResul = candidateResult
+    //////////////////// Association Rule END //////////////////////////////////////////////
 
     if (fileOutput) {
       counts.writeAsCsv(outputPath, "\n", " ")
@@ -41,7 +56,7 @@ object AssociationRuleMining {
       counts.print()
     }
 
-    env.execute("Scala AssociationRule Example")
+    //env.execute("Scala AssociationRule Example")
   }
 
 
