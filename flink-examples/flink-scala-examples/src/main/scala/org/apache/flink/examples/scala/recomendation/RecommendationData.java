@@ -1,5 +1,6 @@
 package org.apache.flink.examples.scala.recomendation;
 
+
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 
@@ -9,10 +10,11 @@ import org.apache.flink.api.java.ExecutionEnvironment;
 public class RecommendationData {
 
     public static final String[] ITEMS = new String[] {
-            "A B C D E F",
-            "A B C D G L",
-            "A B D E",
-            "A E",
+            "1\t1 2",
+            "2\t3 4 5",
+            "3\t3 1 6 4 2",
+            "4\t3 1 4 2",
+            "5\t1 6 4 2",
     };
 
     public static DataSet<String> getDefaultTextLineDataSet(ExecutionEnvironment env) {

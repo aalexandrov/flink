@@ -1,21 +1,21 @@
 package org.apache.flink.examples.scala.recomendation
 
-
-import org.apache.flink.api.scala.ExecutionEnvironment
 import org.apache.flink.api.scala._
-
-
-/**
- * Created by vassil on 14.06.15.
- */
+import org.apache.flink.api.scala.ExecutionEnvironment
+import org.apache.flink.core.fs.FileSystem.WriteMode
 
 object AssociationRuleMining {
 
-  private var fileOutput: Boolean = false
-  private var textPath: String = null
-  private var outputPath: String = null
-  private var candidata_support: Int = 2
+  private var inputFilePath: String = "/home/vassil/Documents/Studium/Master/IMPRO3/InOut/input/items.txt"
+  private var outputFilePath: String = "/home/vassil/Documents/Studium/Master/IMPRO3/InOut/output"
+  private var maxIterations: String = "5"
+  private var minSupport: String = "2"
+  private var kPath: String = "1"
 
+  // Test Case fileInput = false
+  private val fileInput: Boolean = false
+  private val parseContents = " "
+  private val parseKeyValue = "\t"
 
   def main(args: Array[String]) {
     if (!parseParameters(args)) {
@@ -24,73 +24,100 @@ object AssociationRuleMining {
 
     val env = ExecutionEnvironment.getExecutionEnvironment
     val text = getTextDataSet(env)
+    val input = parseText(text)
 
-    // Frequent Items
-
-    ////////////////////  Frequent Items START /////////////////////////////////////////////
-    val counts = text.flatMap { _.toLowerCase.split("\\W+") filter { _.nonEmpty } }
-      .map { (_, 1) }
-      .groupBy(0)
-      .sum(1)
-    ////////////////////  Frequent Items END ///////////////////////////////////////////////
-
-
-
-    //////////////////// Candidate Items START /////////////////////////////////////////////
-    val candidateResult = counts
-    //////////////////// Candidate Items END ///////////////////////////////////////////////
-
-
-    //////////////////// Association Rule START ////////////////////////////////////////////
-    // Data at that point is in the following form
-    // A B 4
-    // A C 3
-    // A B C 3
-    // A C E 1
-    // ...
-
-
-    val input = (
-      "A B 4;" +
-        "A C 3;" +
-        "A B C 3" +
-        "A C E 1"
-      ).split(";").toSeq
-    val documentKey = 1
-    val inputDs = env.fromCollection(Seq((documentKey, input)))
-
-
-    //val associationResul = candidateResult
-    val associationResult = inputDs .map { (_, 1) }
-    // TODO Vassil implement me
-
-
-
-
-    //////////////////// Association Rule END //////////////////////////////////////////////
-
-    if (fileOutput) {
-      associationResult.writeAsCsv(outputPath, "\n", " ")
-    } else {
-
-      associationResult.print()
-
-      println(associationResult.print)
-
-
-    }
+    run(input, outputFilePath, maxIterations.toInt, minSupport.toInt, kPath.toInt)
 
     env.execute("Scala AssociationRule Example")
   }
 
+  private def run(parsedInput:DataSet[String], output:String, maxIterations:Int, minSup:Int, k:Int): Unit =
+  {
+    var kTemp = k
+    var hasConverged = false
+    var preRules:Array[String] = null
+
+    var arrOutput = scala.collection.mutable.ListBuffer.empty[String]
+
+    while (kTemp < maxIterations && !hasConverged) {
+      printf("Starting K-Path %s\n", kTemp)
+
+      val candidateRules = findCandidates(parsedInput, preRules, kTemp, minSup)
+      val tempRules = candidateRules.collect.toArray
+      val cntRules = tempRules.length
+
+      if (0 == cntRules) {
+        hasConverged = true
+      } else {
+        preRules = tempRules
+
+        arrOutput += (kTemp + "/" + candidateRules.collect + "\n")
+        candidateRules.writeAsText(output + "/" + kTemp, WriteMode.OVERWRITE)
+
+        kTemp += 1
+      }
+    }
+
+    printf("Output Candidate:\n")
+    arrOutput.foreach(println)
+    printf("Converged K-Path %s\n", kTemp)
+  }
+
+  def findCandidates(candidateInput: DataSet[String], prevRules: Array[String], k:Int, minSup:Int):DataSet[String] = {
+    candidateInput.flatMap { itemset =>
+
+      // To Change Flink One under this function
+      val cItem1: Array[Int] = itemset.split(parseContents).map(_.toInt).sorted
+      val combGen1 = new CombinationGenerator();
+      val combGen2 = new CombinationGenerator();
+
+      var candidates = scala.collection.mutable.ListBuffer.empty[(String,Int)]
+      combGen1.reset(k,cItem1)
+
+      // To Change Flink One
+      while (combGen1.hasMoreCombinations()) {
+        val cItem2 = combGen1.next();
+        var valid = true
+        if (k > 1) {
+          combGen2.reset(k-1,cItem2);
+          while (combGen2.hasMoreCombinations() && valid) {
+            valid = prevRules.contains(java.util.Arrays.toString(combGen2.next()))
+          }
+        }
+
+        if (valid) {
+          candidates += Tuple2(java.util.Arrays.toString(cItem2),1)
+        }
+
+      }
+      candidates
+    }
+      .groupBy(0)
+      .reduce( (t1, t2) => (t1._1, t1._2 + t2._2) ).filter(_._2 >= minSup)
+      .map{pair => pair._1}
+  }
+
+  private def parseText(textInput:DataSet[String]) = {
+    textInput.map { input =>
+
+      val idx = input.indexOf(parseKeyValue)
+      val key = input.substring(0, idx)
+      val value = input.substring(idx + 1, input.length)
+      value.split(parseContents).distinct.mkString(parseContents)
+    }
+  }
 
 
   private def parseParameters(args: Array[String]): Boolean = {
+
+    // input, output maxIterations, kPath, minSupport
     if (args.length > 0) {
-      fileOutput = true
-      if (args.length == 2) {
-        textPath = args(0)
-        outputPath = args(1)
+      if (args.length == 5) {
+        inputFilePath = args(0)
+        outputFilePath = args(1)
+        maxIterations = args(2)
+        minSupport = args(3)
+        kPath = args(4)
         true
       } else {
         System.err.println("Usage: AssociationRule <text path> <result path>")
@@ -105,19 +132,19 @@ object AssociationRuleMining {
   }
 
   private def getTextDataSet(env: ExecutionEnvironment): DataSet[String] = {
-    if (fileOutput) {
-      env.readTextFile(textPath)
+
+    if (fileInput) {
+      println("From File")
+      env.readTextFile(inputFilePath)
     }
     else {
+      println("From Code")
       env.fromCollection(RecommendationData.ITEMS)
     }
   }
-
 }
 
-
 class AssociationRuleMining {
-
 
 }
 

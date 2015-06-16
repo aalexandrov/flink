@@ -9,10 +9,11 @@ import org.apache.flink.api.java.ExecutionEnvironment;
 public class RecommendationData {
 
     public static final String[] ITEMS = new String[] {
-            "A B C D E F",
-            "A B C D G L",
-            "A B D E",
-            "A E",
+            "1  1 2",
+            "2  3 4 5",
+            "3  3 1 6 4 2",
+            "4  3 1 4 2",
+            "5  1 6 4 2",
     };
 
     public static DataSet<String> getDefaultTextLineDataSet(ExecutionEnvironment env) {
