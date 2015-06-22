@@ -13,7 +13,7 @@ public class RecommendationData {
             "1\t1 2",
             "2\t3 4 5",
             "3\t3 1 6 4 2",
-            "4\t3 1 4 2",
+            "4\t3 1 4 2 5 6",
             "5\t1 6 4 2",
     };
 
