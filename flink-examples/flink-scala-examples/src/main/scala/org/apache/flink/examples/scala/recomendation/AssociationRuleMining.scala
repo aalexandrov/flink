@@ -43,7 +43,8 @@ object AssociationRuleMining {
   {
     var kTemp = k
     var hasConverged = false
-    var preRules:Array[String] = null
+    //var preRules:Array[String] = null
+    var preRules : Array[Tuple2[String, Int]] = null
 
     var arrOutput = scala.collection.mutable.ListBuffer.empty[String]
     // According to how much K steps are, Making Pruned Candidate Set
@@ -53,8 +54,10 @@ object AssociationRuleMining {
       val candidateRulesWithCounts = findCandidates(parsedInput, preRules, kTemp, minSup)
       println("COUNTS: " + candidateRulesWithCounts.collect)
 
-      val candidateRules = candidateRulesWithCounts.map{ candidate_set =>candidate_set._1 }
-      val tempRules = candidateRules.collect.toArray
+      val candidateRules = candidateRulesWithCounts.map{ candidate_set => candidate_set._1 }
+      //val tempRules = candidateRules.collect.toArray
+      val tempRules = candidateRulesWithCounts.collect.toArray
+
       val cntRules = tempRules.length
 
       /*
@@ -72,15 +75,17 @@ object AssociationRuleMining {
           // Get all the rules from current iteration that contain all items of the current preRule
           for( rule <- tempRules){
             var containsAllItems = true
-            for (item <- preRule){
+            for (item <- preRule._1.toArray){
 
-              if (!rule.contains(item)) {
+              //if (!rule.contains(item)) {
+              if (!rule._1.contains(item)) {
                 containsAllItems = false
               }
             }
-
             if (containsAllItems) {
-              println("    RULE: " + rule)
+
+             //Calculate the confidence here
+              println("    RULE: " + rule + " CONF: "  )
             }
 
           }
@@ -122,7 +127,7 @@ object AssociationRuleMining {
     printf("Converged K-Path %s\n", kTemp)
   }
 
-  def findCandidates(candidateInput: DataSet[String], prevRules: Array[String], k:Int, minSup:Int):DataSet[Tuple2[String, Int]] = {
+  def findCandidates(candidateInput: DataSet[String], prevRules: Array[Tuple2[String, Int]], k:Int, minSup:Int):DataSet[Tuple2[String, Int]] = {
     // 1) Generating Candidate Set Depending on K Path
     candidateInput.flatMap { itemset =>
       val cItem1: Array[Int] = itemset.split(parseContents).map(_.toInt).sorted
@@ -141,7 +146,19 @@ object AssociationRuleMining {
           combGen2.reset(k-1,cItem2);
           // Check if the preRules contain all items of the combGenerator
           while (combGen2.hasMoreCombinations() && valid) {
-            valid = prevRules.contains(java.util.Arrays.toString(combGen2.next()))
+            var nextComb = java.util.Arrays.toString(combGen2.next())
+
+            // valid = prevRules.contains(nextComb)
+
+            var containsItem = false
+            for (prevRule <- prevRules) {
+              if (prevRule._1.equals(nextComb)) {
+                containsItem = true
+              }
+            }
+
+            valid = containsItem
+
           }
 
         }
