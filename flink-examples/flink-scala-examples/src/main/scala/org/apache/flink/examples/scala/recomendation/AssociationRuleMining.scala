@@ -18,6 +18,7 @@ object AssociationRuleMining {
   private val parseKeyValue = "\t"
 
   def main(args: Array[String]) {
+
     if (!parseParameters(args)) {
       return
     }
@@ -62,9 +63,29 @@ object AssociationRuleMining {
         By using tempRules, DataSet[String]
       */
 
-      foreach (var i = 0; i < tempRules.length; i++) {
+      if (kTemp >= 2) {
+
+        for (preRule <-preRules) {
+          println("PRE RULE: " + preRule)
+
+          for( rule <- tempRules){
+            println("    RULE: " + rule)
+
+
+
+
+          }
+
+
+
+        }
+
+
+
 
       }
+
+
       // Vassil -> We maybe have to do that out of this while. Apriori separates frequent item generation and rulge generation
       /*
         Two-step approach:
