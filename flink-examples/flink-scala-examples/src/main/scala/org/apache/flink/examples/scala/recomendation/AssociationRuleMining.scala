@@ -65,14 +65,23 @@ object AssociationRuleMining {
 
       if (kTemp >= 2) {
 
+        // Iterate over rules from previous iteration
         for (preRule <-preRules) {
           println("PRE RULE: " + preRule)
 
+          // Get all the rules from current iteration that contain all items of the current preRule
           for( rule <- tempRules){
-            println("    RULE: " + rule)
+            var containsAllItems = true
+            for (item <- preRule){
 
+              if (!rule.contains(item)) {
+                containsAllItems = false
+              }
+            }
 
-
+            if (containsAllItems) {
+              println("    RULE: " + rule)
+            }
 
           }
 
