@@ -9,7 +9,7 @@ object AssociationRuleMining {
   private var inputFilePath: String = "/home/vassil/Documents/Studium/Master/IMPRO3/InOut/input/items.txt"
   private var outputFilePath: String = "/home/vassil/Documents/Studium/Master/IMPRO3/InOut/output"
   private var maxIterations: String = "5"
-  private var minSupport: String = "3"
+  private var minSupport: String = "4"
   private var kPath: String = "1"
 
   // Test Case fileInput = false
@@ -51,13 +51,8 @@ object AssociationRuleMining {
     while (kTemp < maxIterations && !hasConverged) {
       printf("Starting K-Path %s\n", kTemp)
 
-      val candidateRulesWithCounts = findCandidates(parsedInput, preRules, kTemp, minSup)
-      println("COUNTS: " + candidateRulesWithCounts.collect)
-
-      val candidateRules = candidateRulesWithCounts.map{ candidate_set => candidate_set._1 }
-      //val tempRules = candidateRules.collect.toArray
-      val tempRules = candidateRulesWithCounts.collect.toArray
-
+      val candidateRules = findCandidates(parsedInput, preRules, kTemp, minSup)
+      val tempRules = candidateRules.collect.toArray
       val cntRules = tempRules.length
 
       /*
@@ -66,47 +61,56 @@ object AssociationRuleMining {
         By using tempRules, DataSet[String]
       */
 
+
+
+
+      /* This was initial not distributed implementation
+
       if (kTemp >= 2) {
+
+        //candidateRules.joinWithTiny(preRules)
 
         // Iterate over rules from previous iteration
         for (preRule <-preRules) {
           println("PRE RULE: " + preRule)
 
           // Get all the rules from current iteration that contain all items of the current preRule
-          for( rule <- tempRules){
+          for( tempRule <- tempRules){
             var containsAllItems = true
             for (item <- preRule._1.toArray){
 
               //if (!rule.contains(item)) {
-              if (!rule._1.contains(item)) {
+              if (!tempRule._1.contains(item)) {
                 containsAllItems = false
               }
             }
             if (containsAllItems) {
 
              //Calculate the confidence here
-              println("    RULE: " + rule + " CONF: "  )
+              println("    RULE: " + tempRule + " CONF: " + tempRule._2+ "/" + preRule._2 + "=" + tempRule._2 / preRule._2.toDouble )
             }
 
           }
-
-
-
         }
-
-
-
-
       }
 
+      */
 
-      // Vassil -> We maybe have to do that out of this while. Apriori separates frequent item generation and rulge generation
-      /*
-        Two-step approach:
-        1. Frequent Itemset Generation
-        – Generate all itemsets whose support ≥ minsup
-        2. Rule Generation
-        – Generate high confidence rules from each frequent itemset, wh */
+      if (kTemp >= 2) {
+
+        // Iterate over rules from previous iteration
+        for (preRule <-preRules) {
+          println("PRE RULE: " + preRule)
+
+          var output = tempRules
+            .filter {item =>  containsAllFromPreRule(item._1, preRule._1)}
+            .map {input =>
+            println("    RULE: " + input + " CONF: " + input._2+ "/" + preRule._2 + "=" + input._2 / preRule._2.toDouble )
+
+            (preRule, input, input._2 / preRule._2.toDouble)
+          }
+        }
+      }
 
       if (0 == cntRules) {
         hasConverged = true
@@ -115,7 +119,7 @@ object AssociationRuleMining {
 
         arrOutput += (kTemp + "/" + candidateRules.collect + "\n")
 
-        candidateRulesWithCounts.writeAsText(output + "/" + kTemp, WriteMode.OVERWRITE)
+        candidateRules.writeAsText(output + "/" + kTemp, WriteMode.OVERWRITE)
         //candidateRules.writeAsText(output + "/" + kTemp, WriteMode.OVERWRITE)
 
         kTemp += 1
@@ -125,6 +129,28 @@ object AssociationRuleMining {
     printf("Output Candidate:\n")
     arrOutput.foreach(println)
     printf("Converged K-Path %s\n", kTemp)
+  }
+
+  def containsAllFromPreRule( newRule: String, preRule: String): Boolean ={
+
+    // TODO do this some other way
+    var newRuleCleaned = newRule.replaceAll("\\s+","").replaceAll("[\\[\\](){}]", "")
+    var preRuleCleaned = preRule.replaceAll("\\s+","").replaceAll("[\\[\\](){}]", "")
+
+    var newRuleArray = newRuleCleaned.split(",")
+    var preRuleArray = preRuleCleaned.split(",")
+
+    var containsAllItems = true
+
+    // Implement that in the filter function
+    for (itemOfRule <- preRuleArray){
+      if (!newRuleArray.contains(itemOfRule)) {
+        containsAllItems = false
+      }
+
+    }
+
+    return containsAllItems
   }
 
   def findCandidates(candidateInput: DataSet[String], prevRules: Array[Tuple2[String, Int]], k:Int, minSup:Int):DataSet[Tuple2[String, Int]] = {

@@ -13,8 +13,12 @@ public class RecommendationData {
             "1\t1 2",
             "2\t3 4 5",
             "3\t3 1 6 4 2",
-            "4\t3 1 4 2 5 6",
-            "5\t1 6 4 2",
+            "4\t1 4 6",
+            "5\t1 2 4 6 50 100",
+            "6\t1 2 6 50 200",
+            "7\t1 2 4 6 50 38",
+            "8\t3 1 4 2 5 6",
+            "9\t1 6 4 2",
     };
 
     public static DataSet<String> getDefaultTextLineDataSet(ExecutionEnvironment env) {
