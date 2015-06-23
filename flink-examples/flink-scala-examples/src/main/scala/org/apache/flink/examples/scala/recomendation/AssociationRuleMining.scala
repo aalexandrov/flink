@@ -7,10 +7,10 @@ import org.apache.flink.core.fs.FileSystem.WriteMode
 object AssociationRuleMining {
 
   private var inputFilePath: String = "/home/vassil/Documents/Studium/Master/IMPRO3/InOut/input/items.txt"
-  private var outputFilePath: String = "/home/vassil/Documents/Studium/Master/IMPRO3/InOut/output"
-  private var maxIterations: String = "5"
-  private var minSupport: String = "4"
-  private var kPath: String = "1"
+  //private var outputFilePath: String = "/home/vassil/Documents/Studium/Master/IMPRO3/InOut/output"
+  private var outputFilePath: String = "/home/jjoon/output"
+  private var maxIterations: String = "6"
+  private var minSupport: String = "3"
 
   // Test Case fileInput = false
   private val fileInput: Boolean = false
@@ -28,140 +28,74 @@ object AssociationRuleMining {
 
     // 0) FrequentItem Function
     val input = parseText(text)
-    printf("Input String: %s\n", input.collect)
 
-    run(input, outputFilePath, maxIterations.toInt, minSupport.toInt, kPath.toInt)
-
+    run(input, outputFilePath, maxIterations.toInt, minSupport.toInt)
 
     // Vassil: In my oppinion the implementation of our next step should be here
     // We have to get the info of the created files and use it for generating of rules
-
     env.execute("Scala AssociationRule Example")
   }
 
-  private def run(parsedInput:DataSet[String], output:String, maxIterations:Int, minSup:Int, k:Int): Unit =
+  private def run(parsedInput:DataSet[String], output:String, maxIterations:Int, minSup:Int): Unit =
   {
-    var kTemp = k
+    var kTemp = 1
     var hasConverged = false
-    //var preRules:Array[String] = null
     var preRules : Array[Tuple2[String, Int]] = null
 
-    var arrOutput = scala.collection.mutable.ListBuffer.empty[String]
+    var arrConfidences = scala.collection.mutable.ListBuffer.empty[(String)]
+    var confidenceOutput : DataSet[Array[String]] = null
+
     // According to how much K steps are, Making Pruned Candidate Set
     while (kTemp < maxIterations && !hasConverged) {
       printf("Starting K-Path %s\n", kTemp)
 
-      val candidateRules = findCandidates(parsedInput, preRules, kTemp, minSup)
+      val candidateRules :DataSet[Tuple2[String, Int]] = findCandidates(parsedInput, preRules, kTemp, minSup)
       val tempRules = candidateRules.collect.toArray
       val cntRules = tempRules.length
-
-      /*
-        Here could be AssociationRule Function compared to bible-aprioi.java code
-        Probably you can implement the confidence and the interest after pruning (global variable minSupport)
-        By using tempRules, DataSet[String]
-      */
-
-
-
-
-      /* This was initial not distributed implementation
+      //Dataset_way
+      //val tempRules = candidateRules
+      //val cntRules = tempRules.count
 
       if (kTemp >= 2) {
 
-        //candidateRules.joinWithTiny(preRules)
-
         // Iterate over rules from previous iteration
+        //Dataset_way
+        //preRules.map{ preRule =>
         for (preRule <-preRules) {
-          println("PRE RULE: " + preRule)
-
-          // Get all the rules from current iteration that contain all items of the current preRule
-          for( tempRule <- tempRules){
-            var containsAllItems = true
-            for (item <- preRule._1.toArray){
-
-              //if (!rule.contains(item)) {
-              if (!tempRule._1.contains(item)) {
-                containsAllItems = false
-              }
-            }
-            if (containsAllItems) {
-
-             //Calculate the confidence here
-              println("    RULE: " + tempRule + " CONF: " + tempRule._2+ "/" + preRule._2 + "=" + tempRule._2 / preRule._2.toDouble )
-            }
-on
+          val confidences = tempRules.filter {item =>  containsAllFromPreRule(item._1, preRule._1)}
+            .map { input =>
+              Tuple2(preRule._1 +" => "+ input._1, 100*(input._2 / preRule._2.toDouble))
+            //RULE: [2, 6] => [2, 4, 6] CONF RATE: 4/6=66.66
           }
+          println("OUTPUT FILE: " + confidences.mkString)
+          arrConfidences += confidences.mkString
+          //Dataset_way
+          //confidenceOutput += confidences
         }
-      }
-      */
-
-      if (kTemp >= 2) {
-
-        var confidences = scala.collection.mutable.ListBuffer.empty[(String,String, Double)]
-
-        //var confidences : Array[Tuple3[String, String, Double]] = new Array[(String, String, Double)](1000)
-
-        // Iterate over rules from previous iteration
-        for (preRule <-preRules) {
-          println("PRE RULE: " + preRule)
-
-          var output = tempRules
-            .filter {item =>  containsAllFromPreRule(item._1, preRule._1)}
-            .map {input =>
-
-              println("    RULE: " + input + " CONF: " + input._2+ "/" + preRule._2 + "=" + input._2 / preRule._2.toDouble )
-
-            }
-
-          //TODO Do it tistributed here
-          // TODO Aggregate output and write in a file
-          //confidences.+=(output)
-
-        }
-
       }
 
       if (0 == cntRules) {
         hasConverged = true
       } else {
         preRules = tempRules
-
-        arrOutput += (kTemp + "/" + candidateRules.collect + "\n")
-
-        candidateRules.writeAsText(output + "/" + kTemp, WriteMode.OVERWRITE)
-        //candidateRules.writeAsText(output + "/" + kTemp, WriteMode.OVERWRITE)
+        // TODO ARRAY[String] -> DATASET[ARRAY[STRING]]
+        //Dataset_way
+        // I think we should change
+        // - findCandidate function from PrevRule : DataSet[Array[Tuple2]]
+        // - tempRules : DataSet[Array[Tuple2]]
+        //confidenceOutput.writeAsText(output + "/" + kTemp, WriteMode.OVERWRITE)
+        arrConfidences
 
         kTemp += 1
       }
     }
-
-    printf("Output Candidate:\n")
-    arrOutput.foreach(println)
+    //printf("Output Candidate:\n")
     printf("Converged K-Path %s\n", kTemp)
   }
 
-  def containsAllFromPreRule( newRule: String, preRule: String): Boolean ={
 
-    // TODO do this some other way
-    var newRuleCleaned = newRule.replaceAll("\\s+","").replaceAll("[\\[\\](){}]", "")
-    var preRuleCleaned = preRule.replaceAll("\\s+","").replaceAll("[\\[\\](){}]", "")
-
-    var newRuleArray = newRuleCleaned.split(",")
-    var preRuleArray = preRuleCleaned.split(",")
-
-    var containsAllItems = true
-
-    // Implement that in the filter function
-    for (itemOfRule <- preRuleArray){
-      if (!newRuleArray.contains(itemOfRule)) {
-        containsAllItems = false
-      }
-
-    }
-
-    return containsAllItems
-  }
-
+  //Dataset_way
+  //def findCandidates(candidateInput: DataSet[String], prevRules: DataSet[Array[Tuple2[String, Int]]], k:Int, minSup:Int):DataSet[Tuple2[String, Int]] = {
   def findCandidates(candidateInput: DataSet[String], prevRules: Array[Tuple2[String, Int]], k:Int, minSup:Int):DataSet[Tuple2[String, Int]] = {
     // 1) Generating Candidate Set Depending on K Path
     candidateInput.flatMap { itemset =>
@@ -184,20 +118,15 @@ on
             var nextComb = java.util.Arrays.toString(combGen2.next())
 
             // valid = prevRules.contains(nextComb)
-
             var containsItem = false
             for (prevRule <- prevRules) {
               if (prevRule._1.equals(nextComb)) {
                 containsItem = true
               }
             }
-
             valid = containsItem
-
           }
-
         }
-        // If they contain
         if (valid) {
           candidates += Tuple2(java.util.Arrays.toString(cItem2),1)
         }
@@ -207,6 +136,27 @@ on
       .groupBy(0).reduce( (t1, t2) => (t1._1, t1._2 + t2._2) )
       // 3) Pruning Step
       .filter(_._2 >= minSup)
+  }
+
+
+  private def containsAllFromPreRule( newRule: String, preRule: String): Boolean ={
+
+    // TODO do this some other way
+    val newRuleCleaned = newRule.replaceAll("\\s+","").replaceAll("[\\[\\](){}]", "")
+    val preRuleCleaned = preRule.replaceAll("\\s+","").replaceAll("[\\[\\](){}]", "")
+
+    val newRuleArray = newRuleCleaned.split(",")
+    val preRuleArray = preRuleCleaned.split(",")
+
+    var containsAllItems = true
+
+    // Implement that in the filter function
+    for (itemOfRule <- preRuleArray){
+      if (!newRuleArray.contains(itemOfRule)) {
+        containsAllItems = false
+      }
+    }
+    return containsAllItems
   }
 
   private def parseText(textInput:DataSet[String]) = {
@@ -229,7 +179,6 @@ on
         outputFilePath = args(1)
         maxIterations = args(2)
         minSupport = args(3)
-        kPath = args(4)
         true
       } else {
         System.err.println("Usage: AssociationRule <text path> <result path>")
@@ -259,4 +208,36 @@ on
 class AssociationRuleMining {
 
 }
+
+
+/* This was initial not distributed implementation
+
+if (kTemp >= 2) {
+
+  //candidateRules.joinWithTiny(preRules)
+
+  // Iterate over rules from previous iteration
+  for (preRule <-preRules) {
+    println("PRE RULE: " + preRule)
+
+    // Get all the rules from current iteration that contain all items of the current preRule
+    for( tempRule <- tempRules){
+      var containsAllItems = true
+      for (item <- preRule._1.toArray){
+
+        //if (!rule.contains(item)) {
+        if (!tempRule._1.contains(item)) {
+          containsAllItems = false
+        }
+      }
+      if (containsAllItems) {
+
+       //Calculate the confidence here
+        println("    RULE: " + tempRule + " CONF: " + tempRule._2+ "/" + preRule._2 + "=" + tempRule._2 / preRule._2.toDouble )
+      }
+on
+    }
+  }
+}
+*/
 
