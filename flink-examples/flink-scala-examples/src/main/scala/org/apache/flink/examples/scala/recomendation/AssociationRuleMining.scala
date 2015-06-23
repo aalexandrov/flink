@@ -89,14 +89,17 @@ object AssociationRuleMining {
              //Calculate the confidence here
               println("    RULE: " + tempRule + " CONF: " + tempRule._2+ "/" + preRule._2 + "=" + tempRule._2 / preRule._2.toDouble )
             }
-
+on
           }
         }
       }
-
       */
 
       if (kTemp >= 2) {
+
+        var confidences = scala.collection.mutable.ListBuffer.empty[(String,String, Double)]
+
+        //var confidences : Array[Tuple3[String, String, Double]] = new Array[(String, String, Double)](1000)
 
         // Iterate over rules from previous iteration
         for (preRule <-preRules) {
@@ -105,11 +108,17 @@ object AssociationRuleMining {
           var output = tempRules
             .filter {item =>  containsAllFromPreRule(item._1, preRule._1)}
             .map {input =>
-            println("    RULE: " + input + " CONF: " + input._2+ "/" + preRule._2 + "=" + input._2 / preRule._2.toDouble )
 
-            (preRule, input, input._2 / preRule._2.toDouble)
-          }
+              println("    RULE: " + input + " CONF: " + input._2+ "/" + preRule._2 + "=" + input._2 / preRule._2.toDouble )
+
+            }
+
+          //TODO Do it tistributed here
+          // TODO Aggregate output and write in a file
+          //confidences.+=(output)
+
         }
+
       }
 
       if (0 == cntRules) {
