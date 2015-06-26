@@ -1,8 +1,13 @@
 package org.apache.flink.examples.scala.recomendation
 
+import java.util
+
+import org.apache.flink.api.common.functions.{RichFlatMapFunction, RichMapFunction, FlatMapFunction}
 import org.apache.flink.api.scala._
 import org.apache.flink.api.scala.ExecutionEnvironment
+import org.apache.flink.configuration.Configuration
 import org.apache.flink.core.fs.FileSystem.WriteMode
+import org.apache.flink.util.Collector
 
 object AssociationRuleMining {
 
@@ -91,60 +96,73 @@ object AssociationRuleMining {
 
   def findCandidates(candidateInput: DataSet[String], prevRulesNew: DataSet[Tuple2[String, Int]], k:Int, minSup:Int):DataSet[Tuple2[String, Int]] = {
 
-    // TODO use dataset fot this prevrules... maybe with broadcast
-    val prevRules = prevRulesNew.collect.toArray
-
     // 1) Generating Candidate Set Depending on K Path
-    candidateInput.flatMap { itemset =>
-      val cItem1: Array[Int] = itemset.split(parseContents).map(_.toInt).sorted
-      val combGen1 = new CombinationGenerator();
-      val combGen2 = new CombinationGenerator();
+    candidateInput.flatMap(
 
-      var candidates = scala.collection.mutable.ListBuffer.empty[(String,Int)]
-      combGen1.reset(k,cItem1)
+      new RichFlatMapFunction[String, Tuple2[String, Int]]() {
 
-      while (combGen1.hasMoreCombinations()) {
-        val cItem2 = combGen1.next();
+        var broadcastedPreRules: util.List[(String, Int)] = null
 
-        // We assure that the elements will be added in the first iteration. (There are no preRules to compare)
-        var valid = true
-        if (k > 1) {
-          combGen2.reset(k-1,cItem2);
+        override def open(config: Configuration): Unit = {
+          // 3. Access the broadcasted DataSet as a Collection
+          broadcastedPreRules = getRuntimeContext().getBroadcastVariable[Tuple2[String, Int]]("prevRules")
+        }
 
-          // Check if the preRules contain all items of the combGenerator
-          while (combGen2.hasMoreCombinations() && valid) {
-            val nextComb = java.util.Arrays.toString(combGen2.next())
+        def flatMap(in: String, out: Collector[Tuple2[String, Int]]) = {
 
-            // TODO Not serializable exception (THese should be the daaset solution)
-            // Distributed way for the bottom "while"
-            /*
-            var containsItemNew : Boolean = prevRulesNew.map{ item =>
+            val cItem1: Array[Int] = in.split(parseContents).map(_.toInt).sorted
 
-              item._1.equals(nextComb)
+            val combGen1 = new CombinationGenerator();
+            val combGen2 = new CombinationGenerator();
 
-            }.reduce(_ || _).collect(0)
-            */
+            var candidates = scala.collection.mutable.ListBuffer.empty[(String,Int)]
+            combGen1.reset(k,cItem1)
 
-            var containsItem = false
-            for (prevRule <- prevRules) {
-              if (prevRule._1.equals(nextComb)) {
-                containsItem = true
+            while (combGen1.hasMoreCombinations()) {
+              val cItem2 = combGen1.next();
+
+              // We assure that the elements will be added in the first iteration. (There are no preRules to compare)
+              var valid = true
+              if (k > 1) {
+                combGen2.reset(k-1,cItem2);
+
+                // Check if the preRules contain all items of the combGenerator
+                while (combGen2.hasMoreCombinations() && valid) {
+                  val nextComb = java.util.Arrays.toString(combGen2.next())
+
+                  // TODO If broadcast variable is bad solution then try this -> (BUT) Not serializable exception (THese should be the dataset solution)
+                  // Distributed way for the bottom "for"
+                  /*
+                  var containsItemNew : Boolean = prevRulesNew.map{ item =>
+
+                    item._1.equals(nextComb)
+
+                  }.reduce(_ || _).collect(0)
+                  */
+
+                  var containsItem = false
+                  for ( i <- 0 to (broadcastedPreRules.size()-1) ) {
+                    if (broadcastedPreRules.get(i)._1.equals(nextComb)){
+                      containsItem  = true
+                    }
+                  }
+
+                  valid = containsItem
+                }
+              }
+              if (valid) {
+                out.collect(Tuple2(java.util.Arrays.toString(cItem2),1))
               }
             }
-            valid = containsItem
-          }
         }
-        if (valid) {
-          candidates += Tuple2(java.util.Arrays.toString(cItem2),1)
-        }
-      }
-      candidates
-    } // 2) Merge Candidate Set on Each Same Word
+      })
+
+      .withBroadcastSet(prevRulesNew, "prevRules")
+      // 2) Merge Candidate Set on Each Same Word
       .groupBy(0).reduce( (t1, t2) => (t1._1, t1._2 + t2._2) )
       // 3) Pruning Step
       .filter(_._2 >= minSup)
   }
-
 
   private def containsAllFromPreRule( newRule: String, preRule: String): Boolean ={
 
@@ -216,5 +234,3 @@ object AssociationRuleMining {
 class AssociationRuleMining {
 
 }
-
-
