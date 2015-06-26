@@ -8,7 +8,7 @@ object AssociationRuleMining {
 
   private var inputFilePath: String = "/home/vassil/Documents/Studium/Master/IMPRO3/InOut/input/items.txt"
   //private var outputFilePath: String = "/home/vassil/Documents/Studium/Master/IMPRO3/InOut/output"
-  private var outputFilePath: String = "/home/jjoon/output"
+  private var outputFilePath: String = "/home/vassil/output"
   private var maxIterations: String = "6"
   private var minSupport: String = "3"
 
@@ -40,16 +40,23 @@ object AssociationRuleMining {
   {
     var kTemp = 1
     var hasConverged = false
-    var preRules : Array[Tuple2[String, Int]] = null
+    var emptyArray : Array[Tuple2[String, Int]] = new Array[(String, Int)](0)
+    var emptyDS = ExecutionEnvironment.getExecutionEnvironment.fromCollection(emptyArray)
+    var preRules : DataSet[Tuple2[String, Int]] = emptyDS
+
 
     var arrConfidences = scala.collection.mutable.ListBuffer.empty[(String)]
     var confidenceOutput : DataSet[Array[String]] = null
 
     // According to how much K steps are, Making Pruned Candidate Set
     while (kTemp < maxIterations && !hasConverged) {
+      println()
       printf("Starting K-Path %s\n", kTemp)
+      println()
 
       val candidateRules :DataSet[Tuple2[String, Int]] = findCandidates(parsedInput, preRules, kTemp, minSup)
+
+      val tempRulesNew = candidateRules
       val tempRules = candidateRules.collect.toArray
       val cntRules = tempRules.length
       //Dataset_way
@@ -58,32 +65,27 @@ object AssociationRuleMining {
 
       if (kTemp >= 2) {
 
-        // Iterate over rules from previous iteration
-        //Dataset_way
-        //preRules.map{ preRule =>
-        for (preRule <-preRules) {
-          val confidences = tempRules.filter {item =>  containsAllFromPreRule(item._1, preRule._1)}
-            .map { input =>
-              Tuple2(preRule._1 +" => "+ input._1, 100*(input._2 / preRule._2.toDouble))
+        // TODO Change it with some kind of join with special function
+        val confidences : DataSet[Tuple2[String, Double]] = preRules.crossWithHuge(tempRulesNew).filter{item => containsAllFromPreRule(item._2._1, item._1._1)}
+          .map(
+            input =>
+              Tuple2(input._1._1 +" => "+ input._2._1, 100 * (input._2._2 / input._1._2.toDouble))
             //RULE: [2, 6] => [2, 4, 6] CONF RATE: 4/6=66.66
-          }
-          println("OUTPUT FILE: " + confidences.mkString)
-          arrConfidences += confidences.mkString
-          //Dataset_way
-          //confidenceOutput += confidences
-        }
+
+          )
+
+        // TODO Write confidences in file
+        confidences.writeAsText(outputFilePath + "/" + kTemp, WriteMode.OVERWRITE)
+        arrConfidences += confidences.collect.mkString
+
       }
 
       if (0 == cntRules) {
         hasConverged = true
       } else {
-        preRules = tempRules
-        // TODO ARRAY[String] -> DATASET[ARRAY[STRING]]
-        //Dataset_way
-        // I think we should change
-        // - findCandidate function from PrevRule : DataSet[Array[Tuple2]]
-        // - tempRules : DataSet[Array[Tuple2]]
-        //confidenceOutput.writeAsText(output + "/" + kTemp, WriteMode.OVERWRITE)
+
+        preRules = candidateRules
+
         arrConfidences
 
         kTemp += 1
@@ -94,9 +96,23 @@ object AssociationRuleMining {
   }
 
 
-  //Dataset_way
-  //def findCandidates(candidateInput: DataSet[String], prevRules: DataSet[Array[Tuple2[String, Int]]], k:Int, minSup:Int):DataSet[Tuple2[String, Int]] = {
-  def findCandidates(candidateInput: DataSet[String], prevRules: Array[Tuple2[String, Int]], k:Int, minSup:Int):DataSet[Tuple2[String, Int]] = {
+  //TODO Dataset_way for prevRules
+  def findCandidates(candidateInput: DataSet[String], prevRulesNew: DataSet[Tuple2[String, Int]], k:Int, minSup:Int):DataSet[Tuple2[String, Int]] = {
+
+    // TODO maybe we dont need to use dataset fot this prevrules
+    var prevRules = prevRulesNew.collect.toArray
+    for (r <- prevRules) {
+
+      println("PRE RULEEEEE: " + r)
+    }
+
+    var candidateInp = candidateInput.collect.toArray
+    for (i <- candidateInp) {
+
+      println("CAND INPUT: " + i)
+    }
+
+
     // 1) Generating Candidate Set Depending on K Path
     candidateInput.flatMap { itemset =>
       val cItem1: Array[Int] = itemset.split(parseContents).map(_.toInt).sorted
@@ -113,9 +129,18 @@ object AssociationRuleMining {
         var valid = true
         if (k > 1) {
           combGen2.reset(k-1,cItem2);
+
           // Check if the preRules contain all items of the combGenerator
           while (combGen2.hasMoreCombinations() && valid) {
             var nextComb = java.util.Arrays.toString(combGen2.next())
+
+            // TODO Not serializable exception
+            // Distributed way for the bottom "while"
+            //var containsItem : Boolean = prevRules.map{ item =>
+
+            //  item._1.equals(nextComb)
+
+            //}.reduce(_ || _).collect(0)
 
             // valid = prevRules.contains(nextComb)
             var containsItem = false
@@ -156,6 +181,10 @@ object AssociationRuleMining {
         containsAllItems = false
       }
     }
+
+    var isTrue = " "
+    if (containsAllItems) isTrue = "TRUE"
+    println("CONTAINSALL: " + newRuleArray + "          " + preRuleArray + "          " + isTrue )
     return containsAllItems
   }
 
