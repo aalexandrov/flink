@@ -10,7 +10,7 @@ import java.util.Stack;
  * This class represents a iterator which geos through the different possible combinations
  *
  */
-public class CombinationGenerator {
+public class CombinationGeneratorJava {
 
     public static final int[] BLANK_COMBINATION = new int[] { Integer.MIN_VALUE };
 
@@ -21,7 +21,7 @@ public class CombinationGenerator {
     private int[] source;
     private int[] nextCombination;
 
-    public CombinationGenerator() {
+    public CombinationGeneratorJava() {
         this.stack = new Stack<Integer>();
     }
 

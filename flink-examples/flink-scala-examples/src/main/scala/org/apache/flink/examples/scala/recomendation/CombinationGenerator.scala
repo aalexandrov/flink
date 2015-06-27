@@ -3,7 +3,7 @@ package org.apache.flink.examples.scala.recomendation
 import java.util
 import java.util.Arrays
 
-class CombinationGeneratorScala {
+class CombinationGenerator {
 
   var BLANK_COMBINATION: Array[Int] = Array[Int](Integer.MIN_VALUE)
   var k: Int = 0
@@ -75,7 +75,7 @@ class CombinationGeneratorScala {
 
     while (k != 0 && hasNextCombination) {
 
-      var index = (stack.size - 1)
+      var index = stack.size - 1
       var value = stack.pop
 
 
@@ -90,14 +90,9 @@ class CombinationGeneratorScala {
 
         if (index == k) {
 
-          System.out.println("index == k is true . Index: " + index + " k: " + k)
-
-
           var combination: Array[Int] =  new Array[Int](k)
 
           for(  i <- 0 to (k-1) ){ // workaround what I need is for (int i = 0; i < k; i++) but for(i <- 0 to k) includes k too. That's why (k-1)
-
-            System.out.println("In da loop. i : " + i +" and k : " + k)
 
             combination(i) = source(result(i))
           }

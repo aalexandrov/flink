@@ -13,7 +13,8 @@ object AssociationRuleMining {
 
   private var inputFilePath: String = "/home/vassil/Documents/Studium/Master/IMPRO3/InOut/input/items.txt"
   //private var outputFilePath: String = "/home/vassil/Documents/Studium/Master/IMPRO3/InOut/output"
-  private var outputFilePath: String = "/home/vassil/output"
+ // private var outputFilePath: String = "/home/vassil/output"
+  private var outputFilePath: String = "/Software/Workspace/vslGithub/InOut/output"
   private var maxIterations: String = "6"
   private var minSupport: String = "3"
 
@@ -112,23 +113,23 @@ object AssociationRuleMining {
 
             val cItem1: Array[Int] = in.split(parseContents).map(_.toInt).sorted
 
-            val combGen1 = new CombinationGenerator();
-            val combGen2 = new CombinationGenerator();
+            val combGen1 = new CombinationGenerator()
+            val combGen2 = new CombinationGenerator()
 
             var candidates = scala.collection.mutable.ListBuffer.empty[(String,Int)]
             combGen1.reset(k,cItem1)
 
-            while (combGen1.hasMoreCombinations()) {
-              val cItem2 = combGen1.next();
+            while (combGen1.hasMoreCombinations) {
+              val cItem2 = combGen1.next
 
               // We assure that the elements will be added in the first iteration. (There are no preRules to compare)
               var valid = true
               if (k > 1) {
-                combGen2.reset(k-1,cItem2);
+                combGen2.reset(k-1,cItem2)
 
                 // Check if the preRules contain all items of the combGenerator
-                while (combGen2.hasMoreCombinations() && valid) {
-                  val nextComb = java.util.Arrays.toString(combGen2.next())
+                while (combGen2.hasMoreCombinations && valid) {
+                  val nextComb = java.util.Arrays.toString(combGen2.next)
 
                   // TODO If broadcast variable is bad solution then try this -> (BUT) Not serializable exception (THese should be the dataset solution)
                   // Distributed way for the bottom "for"
