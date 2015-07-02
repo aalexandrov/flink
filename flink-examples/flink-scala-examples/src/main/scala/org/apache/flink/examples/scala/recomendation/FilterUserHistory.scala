@@ -19,7 +19,9 @@ object FilterUserHistory {
 
     val userData: DataSet[String] = env.readTextFile(inputPath)
 
-    val userFilterData = userData.flatMap(
+    val userFilterData = userData
+      .filter(_.contains("SALE"))
+      .flatMap(
 
       new FlatMapFunction[String, (String,String)] {
 
