@@ -12,9 +12,8 @@ import org.apache.flink.util.Collector
 object AssociationRuleMining {
 
   private var inputFilePath: String = "/home/vassil/Documents/Studium/Master/IMPRO3/InOut/input/items.txt"
-  //private var outputFilePath: String = "/home/vassil/Documents/Studium/Master/IMPRO3/InOut/output"
- // private var outputFilePath: String = "/home/vassil/output"
-  private var outputFilePath: String = "/Software/Workspace/vslGithub/InOut/output"
+  private var outputFilePath: String = "/home/vassil/Documents/Studium/Master/IMPRO3/InOut/output"
+  //private var outputFilePath: String = "/Software/Workspace/vslGithub/InOut/output"
   private var maxIterations: String = "6"
   private var minSupport: String = "3"
 
