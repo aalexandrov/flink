@@ -29,12 +29,32 @@ object AssociationRuleMining {
     }
 
     val env = ExecutionEnvironment.getExecutionEnvironment
+
+    val inputPath = "/home/vassil/workspace/flink/flink-examples/flink-scala-examples/src/main/scala/org/apache/flink/examples/scala/recomendation/datazal.txt"
+    //val inputPath = "/home/jjoon/flink/flink-examples/flink-scala-examples/src/main/scala/org/apache/flink/examples/scala/recomendation/datazal.txt"
+    val outputPath = "/home/vassil/workspace/inputOutput/output/zalandoProject"
+    // val outputPath
+
+    val salesData: DataSet[String] = env.readTextFile(inputPath)
+    val salesFilterData = salesData.filter(_.contains("SALE"))
+
+    val salesOnly = salesFilterData
+      //TODO code beautify
+      .map(t => (t.split("\\s+")(2), t.split("\\s+")(3).replace(",", " ")))
+      // Group by user session
+      .groupBy(0)
+      .reduce((t1,t2) => (t1._1, t1._2 + " " + t2._2))
+      .map(t => t._2)
+
+    salesOnly.writeAsText(outputPath + "/sales", WriteMode.OVERWRITE)
+
+
     val text = getTextDataSet(env)
 
     // 0) FrequentItem Function
     val input = parseText(text)
 
-    run(input, outputFilePath, maxIterations.toInt, minSupport.toInt)
+    //run(input, outputFilePath, maxIterations.toInt, minSupport.toInt)
 
     // Vassil: In my oppinion the implementation of our next step should be here
     // We have to get the info of the created files and use it for generating of rules

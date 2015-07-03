@@ -6,13 +6,13 @@ import org.apache.flink.api.scala.ExecutionEnvironment
 import org.apache.flink.core.fs.FileSystem.WriteMode
 import org.apache.flink.util.Collector
 
-object FilterUserHistory {
+object GenerateUserPrchaseHistory {
 
   def main(args: Array[String]) {
 
     val env = ExecutionEnvironment.getExecutionEnvironment
 
-    val inputPath = "/home/vassil/workspace/flink2/flink/flink-examples/flink-scala-examples/src/main/scala/org/apache/flink/examples/scala/recomendation/datazal.txt"
+    val inputPath = "/home/vassil/workspace/flink/flink-examples/flink-scala-examples/src/main/scala/org/apache/flink/examples/scala/recomendation/datazal.txt"
     //val inputPath = "/home/jjoon/flink/flink-examples/flink-scala-examples/src/main/scala/org/apache/flink/examples/scala/recomendation/datazal.txt"
     val outputPath = "/home/vassil/workspace/inputOutput/output/zalandoProject"
     // val outputPath
@@ -50,6 +50,6 @@ object FilterUserHistory {
 
 }
 
-class FilterUserHistory {
+class GenerateUserPrchaseHistory {
 
 }
