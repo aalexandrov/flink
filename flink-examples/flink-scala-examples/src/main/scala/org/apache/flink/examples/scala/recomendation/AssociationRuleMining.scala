@@ -42,6 +42,7 @@ object AssociationRuleMining {
       //TODO code beautify
       .map(t => (t.split("\\s+")(2), t.split("\\s+")(3).replace(",", " ")))
       // Group by user session
+      .distinct
       .groupBy(0)
       .reduce((t1,t2) => (t1._1, t1._2 + " " + t2._2))
       .map(t => t._2)
