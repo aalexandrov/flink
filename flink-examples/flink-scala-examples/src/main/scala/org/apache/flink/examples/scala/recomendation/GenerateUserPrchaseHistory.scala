@@ -42,7 +42,7 @@ object GenerateUserPrchaseHistory {
       .groupBy(0)
       .reduce((t1,t2) => (t1._1, t1._2 + " " + t2._2)) // To combine all bought products
 
-    userFilterData.writeAsText(outputPath , WriteMode.OVERWRITE)
+    userFilterData.writeAsText(outputPath + "/userPurchaseHistory" , WriteMode.OVERWRITE)
 
     env.execute("Scala AssociationRule Example")
   }

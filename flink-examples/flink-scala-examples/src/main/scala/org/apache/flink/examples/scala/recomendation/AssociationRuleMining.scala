@@ -55,10 +55,13 @@ object AssociationRuleMining {
     // 0) FrequentItem Function
     val input = parseText(text)
 
-    //run(input, outputFilePath, maxIterations.toInt, minSupport.toInt)
+    run(input, outputFilePath, maxIterations.toInt, minSupport.toInt)
 
-    // Vassil: In my oppinion the implementation of our next step should be here
-    // We have to get the info of the created files and use it for generating of rules
+    //TODO We have to run our algorithm with the sales data
+    // TODO For that we have to change the generator and the implementation to use STRING instead of INTEGER
+    //run(salesOnly, outputFilePath, maxIterations.toInt, minSupport.toInt)
+
+
     env.execute("Scala AssociationRule Example")
   }
 
@@ -133,8 +136,8 @@ object AssociationRuleMining {
 
             val cItem1: Array[Int] = in.split(parseContents).map(_.toInt).sorted
 
-            val combGen1 = new CombinationGenerator()
-            val combGen2 = new CombinationGenerator()
+            val combGen1 = new CombinationGeneratorJava()
+            val combGen2 = new CombinationGeneratorJava()
 
             var candidates = scala.collection.mutable.ListBuffer.empty[(String,Int)]
             combGen1.reset(k,cItem1)
@@ -208,11 +211,7 @@ object AssociationRuleMining {
 
   private def parseText(textInput:DataSet[String]) = {
     textInput.map { input =>
-
-      val idx = input.indexOf(parseKeyValue)
-      val key = input.substring(0, idx)
-      val value = input.substring(idx + 1, input.length)
-      value.split(parseContents).distinct.mkString(parseContents)
+      input.split(parseContents).distinct.mkString(parseContents)
     }
   }
 
