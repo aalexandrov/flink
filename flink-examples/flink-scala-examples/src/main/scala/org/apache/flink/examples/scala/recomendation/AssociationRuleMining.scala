@@ -12,7 +12,7 @@ import org.apache.flink.util.Collector
 object AssociationRuleMining {
 
   private var inputFilePath: String = "/home/vassil/Documents/Studium/Master/IMPRO3/InOut/input/items.txt"
-  private var outputFilePath: String = "/home/vassil/Documents/Studium/Master/IMPRO3/InOut/output"
+  private var outputFilePath : String = "/home/jjoon/output/"
   //private var outputFilePath: String = "/Software/Workspace/vslGithub/InOut/output"
   private var maxIterations: String = "6"
   private var minSupport: String = "3"
@@ -30,17 +30,19 @@ object AssociationRuleMining {
 
     val env = ExecutionEnvironment.getExecutionEnvironment
 
-    val inputPath = "/home/vassil/workspace/flink/flink-examples/flink-scala-examples/src/main/scala/org/apache/flink/examples/scala/recomendation/datazal.txt"
+    //val inputPath = "/home/vassil/workspace/flink/flink-examples/flink-scala-examples/src/main/scala/org/apache/flink/examples/scala/recomendation/datazal.txt"
     //val inputPath = "/home/jjoon/flink/flink-examples/flink-scala-examples/src/main/scala/org/apache/flink/examples/scala/recomendation/datazal.txt"
-    val outputPath = "/home/vassil/workspace/inputOutput/output/zalandoProject"
-    // val outputPath
+    val inputPath = "/home/jjoon/250data.txt"
+    //val outputPath = "/home/vassil/workspace/inputOutput/output/zalandoProject"
+    val outputPath = "/home/jjoon/output/"
 
     val salesData: DataSet[String] = env.readTextFile(inputPath)
     val salesFilterData = salesData.filter(_.contains("SALE"))
 
     val salesOnly = salesFilterData
       //TODO code beautify
-      .map(t => (t.split("\\s+")(2), t.split("\\s+")(3).replace(",", " ")))
+      //TODO change 1 to 2; user -> user session
+      .map(t => (t.split("\\s+")(1), t.split("\\s+")(3).replace(",", " ").replace("p-","")))
       // Group by user session
       .distinct
       .groupBy(0)
@@ -55,11 +57,12 @@ object AssociationRuleMining {
     // 0) FrequentItem Function
     val input = parseText(text)
 
-    run(input, outputFilePath, maxIterations.toInt, minSupport.toInt)
+    //run(input, outputFilePath, maxIterations.toInt, minSupport.toInt)
 
     //TODO We have to run our algorithm with the sales data
     // TODO For that we have to change the generator and the implementation to use STRING instead of INTEGER
-    //run(salesOnly, outputFilePath, maxIterations.toInt, minSupport.toInt)
+    //
+    run(salesOnly, outputFilePath, maxIterations.toInt, minSupport.toInt)
 
 
     env.execute("Scala AssociationRule Example")
