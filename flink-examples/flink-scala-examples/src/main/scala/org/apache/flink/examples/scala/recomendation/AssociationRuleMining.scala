@@ -11,16 +11,17 @@ import org.apache.flink.util.Collector
 
 object AssociationRuleMining {
 
-  private var inputFilePath: String = "/home/vassil/Documents/Studium/Master/IMPRO3/InOut/input/items.txt"
+  private var inputFilePath: String = "/home/jjoon/250data.txt"
   private var outputFilePath : String = "/home/jjoon/output/"
-  //private var outputFilePath: String = "/Software/Workspace/vslGithub/InOut/output"
+  private val prepOutputPath = "/home/jjoon/output/"
+
   private var maxIterations: String = "6"
   private var minSupport: String = "3"
 
   // Test Case fileInput = false
-  private val fileInput: Boolean = false
+  //private val fileInput: Boolean = false
   private val parseContents = " "
-  private val parseKeyValue = "\t"
+  //private val parseKeyValue = "\t"
 
   def main(args: Array[String]) {
 
@@ -30,40 +31,31 @@ object AssociationRuleMining {
 
     val env = ExecutionEnvironment.getExecutionEnvironment
 
-    //val inputPath = "/home/vassil/workspace/flink/flink-examples/flink-scala-examples/src/main/scala/org/apache/flink/examples/scala/recomendation/datazal.txt"
-    //val inputPath = "/home/jjoon/flink/flink-examples/flink-scala-examples/src/main/scala/org/apache/flink/examples/scala/recomendation/datazal.txt"
-    val inputPath = "/home/jjoon/250data.txt"
-    //val outputPath = "/home/vassil/workspace/inputOutput/output/zalandoProject"
-    val outputPath = "/home/jjoon/output/"
-
-    val salesData: DataSet[String] = env.readTextFile(inputPath)
+    val salesData: DataSet[String] = env.readTextFile(inputFilePath)
     val salesFilterData = salesData.filter(_.contains("SALE"))
 
     val salesOnly = salesFilterData
-      //TODO code beautify
-      //TODO change 1 to 2; user -> user session
-      .map(t => (t.split("\\s+")(1), t.split("\\s+")(3).replace(",", " ").replace("p-","")))
+      //TODO change 1 to 2; or just leave it; TTYL
+      .map(t => (t.split("\\s+")(1), t.split("\\s+")(3).replace(",", " ")
+      // Remove Prefix "p-" to apply real dataset to our mining algorithm
+      .replace("p-","")))
       // Group by user session
       .distinct
       .groupBy(0)
       .reduce((t1,t2) => (t1._1, t1._2 + " " + t2._2))
       .map(t => t._2)
 
-    salesOnly.writeAsText(outputPath + "/sales", WriteMode.OVERWRITE)
+    // Collect Real Dataset according to User_session and SALE
+    salesOnly.writeAsText(prepOutputPath + "/sales", WriteMode.OVERWRITE)
 
-
-    val text = getTextDataSet(env)
-
-    // 0) FrequentItem Function
-    val input = parseText(text)
-
-    //run(input, outputFilePath, maxIterations.toInt, minSupport.toInt)
-
-    //TODO We have to run our algorithm with the sales data
-    // TODO For that we have to change the generator and the implementation to use STRING instead of INTEGER
-    //
+    // Run our algorithm with the sales REAL DATA
     run(salesOnly, outputFilePath, maxIterations.toInt, minSupport.toInt)
 
+    // Previous work for TESTING
+    //val text = getTextDataSet(env)
+    // 0) FrequentItem Function
+    //val input = parseText(text)
+    //run(input, outputFilePath, maxIterations.toInt, minSupport.toInt)
 
     env.execute("Scala AssociationRule Example")
   }
@@ -75,8 +67,6 @@ object AssociationRuleMining {
     val emptyArray : Array[Tuple2[String, Int]] = new Array[(String, Int)](0)
     val emptyDS = ExecutionEnvironment.getExecutionEnvironment.fromCollection(emptyArray)
     var preRules : DataSet[Tuple2[String, Int]] = emptyDS
-
-    var confidenceOutput : DataSet[Array[String]] = null
 
     // According to how much K steps are, Making Pruned Candidate Set
     while (kTemp < maxIterations && !hasConverged) {
@@ -100,12 +90,9 @@ object AssociationRuleMining {
             input =>
               Tuple2(input._1._1 +" => "+ input._2._1, 100 * (input._2._2 / input._1._2.toDouble))
             //RULE: [2, 6] => [2, 4, 6] CONF RATE: 4/6=66.66
-
           )
-
         // TODO Should this be here ot in the main function?
         confidences.writeAsText(outputFilePath + "/" + kTemp, WriteMode.OVERWRITE)
-
       }
 
       if (0 == cntRules) {
@@ -161,9 +148,7 @@ object AssociationRuleMining {
                   // Distributed way for the bottom "for"
                   /*
                   var containsItemNew : Boolean = prevRulesNew.map{ item =>
-
                     item._1.equals(nextComb)
-
                   }.reduce(_ || _).collect(0)
                   */
 
@@ -208,14 +193,7 @@ object AssociationRuleMining {
         containsAllItems = false
       }
     }
-
     containsAllItems
-  }
-
-  private def parseText(textInput:DataSet[String]) = {
-    textInput.map { input =>
-      input.split(parseContents).distinct.mkString(parseContents)
-    }
   }
 
 
@@ -241,6 +219,8 @@ object AssociationRuleMining {
     }
   }
 
+  // Previous work for TESTING
+  /*
   private def getTextDataSet(env: ExecutionEnvironment): DataSet[String] = {
 
     if (fileInput) {
@@ -252,6 +232,14 @@ object AssociationRuleMining {
       env.fromCollection(RecommendationData.ITEMS)
     }
   }
+
+  // TESTING
+  private def parseText(textInput:DataSet[String]) = {
+    textInput.map { input =>
+      input.split(parseContents).distinct.mkString(parseContents)
+    }
+  }
+  */
 }
 
 class AssociationRuleMining {
