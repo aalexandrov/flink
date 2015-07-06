@@ -126,8 +126,8 @@ object AssociationRuleMining {
 
             val cItem1: Array[Int] = in.split(parseContents).map(_.toInt).sorted
 
-            val combGen1 = new CombinationGeneratorJava()
-            val combGen2 = new CombinationGeneratorJava()
+            val combGen1 = new CombinationGenerator()
+            val combGen2 = new CombinationGenerator()
 
             var candidates = scala.collection.mutable.ListBuffer.empty[(String,Int)]
             combGen1.reset(k,cItem1)
@@ -201,20 +201,21 @@ object AssociationRuleMining {
 
     // input, output maxIterations, kPath, minSupport
     if (args.length > 0) {
-      if (args.length == 5) {
+      if (args.length == 4) {
         inputFilePath = args(0)
         outputFilePath = args(1)
         maxIterations = args(2)
         minSupport = args(3)
         true
       } else {
-        System.err.println("Usage: AssociationRule <text path> <result path>")
+        System.err.println("Usage: AssociationRule <input path> <result path>")
         false
       }
     } else {
       System.out.println("Executing AssociationRule example with built-in default data.")
       System.out.println("  Provide parameters to read input data from a file.")
-      System.out.println("  Usage: AssociationRule <text path> <result path>")
+      System.out.println("  The dataset is from local variable, not from inputPath as parameter.")
+
       true
     }
   }
